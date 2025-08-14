@@ -5,6 +5,7 @@ import { BLACK, WHITE, EMPTY } from '../core/board.js';
 const boardContainer = document.getElementById('board-container');
 const movesLeftSpan = document.getElementById('moves-left');
 const gameMessageP = document.getElementById('game-message');
+const undoButton = document.getElementById('undo-button');
 
 // --- Game Setup ---
 const difficulty = { moves: 5, maxLineLength: 2 };
@@ -64,6 +65,13 @@ boardContainer.addEventListener('click', (event) => {
             renderBoard();
             updateInfo();
         }
+    }
+});
+
+undoButton.addEventListener('click', () => {
+    if (game.undoMove()) {
+        renderBoard();
+        updateInfo();
     }
 });
 

@@ -63,10 +63,21 @@ function gameLoop(game) {
         return;
     }
 
-    rl.question('Enter your move (e.g., C4): ', (input) => {
+    rl.question('Enter your move (e.g., C4) or "undo": ', (input) => {
+        const lowerInput = input.toLowerCase();
+        if (lowerInput === 'undo') {
+            if (game.undoMove()) {
+                console.log("Move undone.");
+            } else {
+                console.log("Cannot undo further.");
+            }
+            gameLoop(game); // Refresh display after undo
+            return;
+        }
+
         const coords = parseInput(input);
         if (!coords) {
-            console.log("Invalid input. Please use format like 'C4'.");
+            console.log("Invalid input. Please use format like 'C4' or 'undo'.");
             gameLoop(game);
             return;
         }
