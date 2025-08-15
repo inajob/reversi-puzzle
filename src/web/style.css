@@ -10,16 +10,23 @@ body {
     display: grid;
     border: 2px solid #333;
     background-color: #008000; /* Green board */
+    width: min(90vw, 400px); /* Max width for larger screens */
+    height: min(90vw, 400px); /* Max height for larger screens */
 }
 
 .cell {
-    width: 50px;
-    height: 50px;
+    width: 100%; /* Take full width of grid cell */
+    height: 100%; /* Take full height of grid cell */
     border: 1px solid #333;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
+}
+
+/* Ensure grid columns adapt to cell size */
+#board-container {
+    grid-template-columns: repeat(auto-fit, minmax(min(10vw, 50px), 1fr));
 }
 
 .cell:hover {
@@ -52,4 +59,16 @@ body {
 
 #solution-display {
     display: none;
+}
+
+@media (max-width: 600px) {
+    h1 {
+        font-size: 1.5em;
+    }
+
+    .game-info p, .game-info button {
+        font-size: 0.9em;
+    }
+
+    /* Further adjustments for smaller screens if necessary */
 }
