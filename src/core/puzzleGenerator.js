@@ -1,5 +1,18 @@
 import { Board, BLACK, WHITE, EMPTY } from './board.js';
 
+// Simple Linear Congruential Generator (LCG) for seeded random numbers
+function createSeededRandom(seed) {
+    let state = seed || Math.floor(Math.random() * 2147483647); // Default to a random seed if none provided
+    return {
+        random: function() {
+            state = (state * 9301 + 49297) % 233280;
+            return state / 233280;
+        },
+        seed: state // Return the actual seed used
+    };
+}
+
+
 /**
  * Finds all possible "un-moves" on the board.
  * @param {Board} board The current board state.
@@ -14,6 +27,12 @@ function findAllPossibleUnmoves(board, difficulty) {
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             if (board.getStone(r, c) !== BLACK) {
+                continue;
+            }
+
+            // If placing a BLACK stone at this position would flip WHITE stones, skip it.
+            // This ensures the 'emptySpot' of an unmove is not a valid move for BLACK.
+            if (board.getFlippableStones(r, c, BLACK).length > 0) {
                 continue;
             }
 
@@ -32,10 +51,24 @@ function findAllPossibleUnmoves(board, difficulty) {
 
                 while (board.isValidCoordinate(pathR, pathC) && board.getStone(pathR, pathC) === BLACK) {
                     line.push({ r: pathR, c: pathC });
-                    linesFromThisSpot.push([...line]);
                     pathR += dir.r;
                     pathC += dir.c;
+
+                    if(pathR >= rows || pathC >= cols || pathR < 0 || pathC < 0){
+                        break;
+                    }
+                    
+                    // Check if the stone immediately after the line is WHITE
+                    if (line.length > 0 && board.isValidCoordinate(pathR, pathC) && board.getStone(pathR, pathC) === WHITE) {
+                        // If there's a WHITE stone immediately after the line, this is not a valid unmove line
+                        continue;
+                    }
+                    if (line.length > 2) {
+                        linesFromThisSpot.push([...line.slice(0, -1)]);
+                    }
                 }
+
+                
             }
 
             if (linesFromThisSpot.length > 0) {
@@ -44,6 +77,7 @@ function findAllPossibleUnmoves(board, difficulty) {
                 if (validLines.length > 0) {
                     const getPowerSet = arr => arr.reduce((acc, val) => acc.concat(acc.map(subset => [...subset, val])), [[]]);
                     const lineCombinations = getPowerSet(validLines).filter(subset => subset.length > 0);
+                    //window.lineCombinations = lineCombinations
 
                     for (const combo of lineCombinations) {
                         allUnmoves.push({
@@ -58,19 +92,32 @@ function findAllPossibleUnmoves(board, difficulty) {
     return allUnmoves;
 }
 
-function generatePuzzle(rows, cols, difficulty) {
+function generatePuzzle(rows, cols, difficulty, seed = null, initialBlackStoneCount = 32) {
+    const rngObject = createSeededRandom(seed);
+    const rng = rngObject.random;
+    const actualSeed = rngObject.seed;
     const { moves } = difficulty;
     const board = new Board(rows, cols);
     
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
+    // Randomly place initial BLACK stones
+    let placedStones = 0;
+    while (placedStones < initialBlackStoneCount) {
+        const r = Math.floor(rng() * rows);
+        const c = Math.floor(rng() * cols);
+        if (board.getStone(r, c) === EMPTY) {
             board.grid[r][c] = BLACK;
+            placedStones++;
         }
     }
 
-    for (let i = 0; i < moves; i++) {
-        let possibleUnmoves = findAllPossibleUnmoves(board, difficulty);
+    const unmovesMade = [];
+    const boardStatesBeforeUnmove = []; // Store board states before each unmove
 
+    for (let i = 0; i < moves; i++) {
+        boardStatesBeforeUnmove.push(board.clone()); // Save the current board state
+
+        let possibleUnmoves = findAllPossibleUnmoves(board, difficulty);
+        /*
         possibleUnmoves = possibleUnmoves.filter(unmove => {
             return !unmove.stonesToWhite.some(stone => {
                 const isEdge = stone.r === 0 || stone.r === rows - 1 ||
@@ -78,22 +125,26 @@ function generatePuzzle(rows, cols, difficulty) {
                 return isEdge;
             });
         });
-
+        */
         if (possibleUnmoves.length === 0) {
             break;
         }
 
-        const unmove = possibleUnmoves[Math.floor(Math.random() * possibleUnmoves.length)];
+        const unmove = possibleUnmoves[Math.floor(rng() * possibleUnmoves.length)];
+        unmovesMade.push(unmove);
 
         board.grid[unmove.emptySpot.r][unmove.emptySpot.c] = EMPTY;
-        for (const stone of unmove.stonesToWhite) {
-            board.grid[stone.r][stone.c] = WHITE;
+        for (let j = 0; j < unmove.stonesToWhite.length; j ++) {
+            board.grid[unmove.stonesToWhite[j].r][unmove.stonesToWhite[j].c] = WHITE;
         }
     }
 
     return {
         initialBoard: board,
-        moves: moves
+        moves: moves,
+        unmoves: unmovesMade,
+        boardStatesBeforeUnmove: boardStatesBeforeUnmove,
+        seed: actualSeed
     };
 }
 

@@ -49,3 +49,7 @@ body {
     font-weight: bold;
     min-height: 1.2em;
 }
+
+#solution-display {
+    display: none;
+}

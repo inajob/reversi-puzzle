@@ -73,6 +73,10 @@ function gameLoop(game) {
             }
             gameLoop(game); // Refresh display after undo
             return;
+        } else if (lowerInput === 'show solution') {
+            console.log(`Solution: ${game.getSolutionMoves()}`);
+            gameLoop(game);
+            return;
         }
 
         const coords = parseInput(input);
@@ -92,7 +96,20 @@ function gameLoop(game) {
 }
 
 const difficulty = { moves: 5, maxLineLength: 2 };
-const game = new Game(8, 8, difficulty);
+
+let seed = null;
+const seedArgIndex = process.argv.indexOf('--seed');
+if (seedArgIndex > -1 && process.argv.length > seedArgIndex + 1) {
+    seed = parseInt(process.argv[seedArgIndex + 1], 10);
+    if (isNaN(seed)) {
+        console.warn("Warning: Invalid seed provided. Using random seed.");
+        seed = null;
+    }
+}
+
+const game = new Game(8, 8, difficulty, seed);
 console.log("--- Reversi Puzzle ---");
-console.log("Goal: Turn all stones to Black (B).");
+console.log("Goal: Eliminate all white stones.");
+console.log(`Seed: ${game.seed}`);
+game.simulateSolution();
 gameLoop(game);
